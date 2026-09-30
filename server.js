@@ -69,10 +69,7 @@ app.get('/public/info', (req, res) => {
   res.status(200).json({ message: 'Welcome stranger! This info is public.' });
 });
 
-// ─────────────────────────────────────────
-// PROTECTED — checks for a token (stub for now)
-// ─────────────────────────────────────────
-app.get('/protected/profile', (req, res) => {
+app.get('/protected/profile', async (req, res) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -85,8 +82,17 @@ app.get('/protected/profile', (req, res) => {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  // Real verification comes in Stage 3 — for now just say we got a token
-  res.status(200).json({ message: 'Token received', token_preview: token.slice(0, 20) + '...' });
+  const { data, error } = await supabase.auth.getUser(token);
+
+  if (error || !data.user) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  res.status(200).json({
+    id: data.user.id,
+    email: data.user.email,
+    created_at: data.user.created_at
+  });
 });
 
 
